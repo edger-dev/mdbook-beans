@@ -1,0 +1,11 @@
+[tasks._bacon-claude-diagnostics]
+run = "bacon claude-diagnostics"
+description = "Run bacon background checker (exports diagnostics to .bacon-claude-diagnostics)"
+
+[tasks._docs-serve]
+run = "cd docs && mdbook serve --port 8882 --hostname 0.0.0.0"
+description = "Start mdbook live-reload dev server"
+
+[tasks.docs-build]
+run = "cd docs && mdbook build"
+description = "Build mdbook static site"
