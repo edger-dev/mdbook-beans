@@ -4,17 +4,20 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct BeansConfig {
     pub project: ProjectConfig,
     pub beans: BeansPathConfig,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ProjectConfig {
     pub name: String,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct BeansPathConfig {
     pub path: PathBuf,
     pub prefix: String,
