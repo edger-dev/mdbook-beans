@@ -11,7 +11,7 @@ use mdbook_preprocessor::{Preprocessor, PreprocessorContext};
 /// Walk book items and replace markers with rendered content.
 /// Uses direct iteration instead of `for_each_mut` to ensure sub_items
 /// are properly nested in the book structure.
-fn replace_markers(items: &mut Vec<BookItem>, beans: &[bean::Bean]) {
+fn replace_markers(items: &mut [BookItem], beans: &[bean::Bean]) {
     for item in items.iter_mut() {
         if let BookItem::Chapter(chapter) = item {
             if chapter.content.contains("{{#beans-active-tasks}}") {

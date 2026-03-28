@@ -82,7 +82,7 @@ fn bean_ref(id: &str, title: &str) -> String {
 }
 
 /// Look up a bean by ID and format a reference link.
-fn bean_ref_by_id<'a>(id: &str, all_beans: &'a [Bean]) -> String {
+fn bean_ref_by_id(id: &str, all_beans: &[Bean]) -> String {
     if let Some(b) = all_beans.iter().find(|b| b.id == id) {
         bean_ref(id, &b.frontmatter.title)
     } else {

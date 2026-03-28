@@ -98,24 +98,19 @@ fn parse_bean(content: &str, filename: &str) -> Result<Bean> {
     })
 }
 
-/// Load all bean files from the beans directory, skipping archive/ and dotfiles.
-pub fn load_beans(root: &Path, config: &BeansConfig) -> Result<Vec<Bean>> {
-    let beans_dir = root.join(&config.beans.path);
-
-    if !beans_dir.exists() {
-        return Ok(Vec::new());
+/// Scan a directory for bean markdown files, skipping directories and dotfiles.
+fn scan_beans_dir(dir: &Path, beans: &mut Vec<Bean>) -> Result<()> {
+    if !dir.exists() {
+        return Ok(());
     }
 
-    let mut beans = Vec::new();
-
-    for entry in std::fs::read_dir(&beans_dir)
-        .with_context(|| format!("failed to read {}", beans_dir.display()))?
+    for entry in
+        std::fs::read_dir(dir).with_context(|| format!("failed to read {}", dir.display()))?
     {
         let entry = entry?;
         let filename = entry.file_name();
         let filename_str = filename.to_string_lossy();
 
-        // Skip directories (archive/, .conversations/) and non-markdown files
         if entry.file_type()?.is_dir() {
             continue;
         }
@@ -132,6 +127,17 @@ pub fn load_beans(root: &Path, config: &BeansConfig) -> Result<Vec<Bean>> {
             Err(e) => eprintln!("warning: skipping {filename_str}: {e}"),
         }
     }
+
+    Ok(())
+}
+
+/// Load all bean files from the beans directory and archive/ subdirectory.
+pub fn load_beans(root: &Path, config: &BeansConfig) -> Result<Vec<Bean>> {
+    let beans_dir = root.join(&config.beans.path);
+
+    let mut beans = Vec::new();
+    scan_beans_dir(&beans_dir, &mut beans)?;
+    scan_beans_dir(&beans_dir.join("archive"), &mut beans)?;
 
     // Sort by ID for stable output
     beans.sort_by(|a, b| a.id.cmp(&b.id));
@@ -201,6 +207,65 @@ Subtask body.
         assert_eq!(bean.frontmatter.parent, Some("beans-epic".to_string()));
         assert_eq!(bean.frontmatter.blocked_by, vec!["beans-dep1", "beans-dep2"]);
         assert_eq!(bean.frontmatter.status, BeanStatus::InProgress);
+    }
+
+    #[test]
+    fn load_beans_includes_archive() {
+        let dir = tempfile::tempdir().unwrap();
+        let beans_dir = dir.path().join(".beans");
+        std::fs::create_dir_all(beans_dir.join("archive")).unwrap();
+
+        // Write a bean in the main dir
+        std::fs::write(
+            beans_dir.join("test-a1b2--active-task.md"),
+            "---\ntitle: Active task\nstatus: todo\ntype: task\n---\nBody.\n",
+        )
+        .unwrap();
+
+        // Write a bean in archive/
+        std::fs::write(
+            beans_dir.join("archive/test-z9y8--old-task.md"),
+            "---\ntitle: Old task\nstatus: archived\ntype: task\n---\nOld body.\n",
+        )
+        .unwrap();
+
+        // Write .beans.yml
+        std::fs::write(
+            dir.path().join(".beans.yml"),
+            "project:\n  name: test\nbeans:\n  path: .beans\n  prefix: test-\n",
+        )
+        .unwrap();
+
+        let config = BeansConfig::load(dir.path()).unwrap();
+        let beans = load_beans(dir.path(), &config).unwrap();
+
+        assert_eq!(beans.len(), 2);
+        let ids: Vec<&str> = beans.iter().map(|b| b.id.as_str()).collect();
+        assert!(ids.contains(&"test-a1b2"));
+        assert!(ids.contains(&"test-z9y8"));
+    }
+
+    #[test]
+    fn load_beans_no_archive_dir_is_ok() {
+        let dir = tempfile::tempdir().unwrap();
+        let beans_dir = dir.path().join(".beans");
+        std::fs::create_dir_all(&beans_dir).unwrap();
+
+        std::fs::write(
+            beans_dir.join("test-a1b2--task.md"),
+            "---\ntitle: A task\nstatus: todo\ntype: task\n---\nBody.\n",
+        )
+        .unwrap();
+
+        std::fs::write(
+            dir.path().join(".beans.yml"),
+            "project:\n  name: test\nbeans:\n  path: .beans\n  prefix: test-\n",
+        )
+        .unwrap();
+
+        let config = BeansConfig::load(dir.path()).unwrap();
+        let beans = load_beans(dir.path(), &config).unwrap();
+        assert_eq!(beans.len(), 1);
     }
 
     #[test]

@@ -248,14 +248,14 @@ mod tests {
             make_bean("b-1", "Task one", BeanStatus::Todo, BeanType::Task, None),
         ];
         let (_, sub_items) = render(&beans, &[8]);
-        if let BookItem::Chapter(type_ch) = &sub_items[0] {
-            if let BookItem::Chapter(bean_ch) = &type_ch.sub_items[0] {
-                assert_eq!(
-                    bean_ch.path.as_ref().unwrap().to_string_lossy(),
-                    "beans/b-1.md"
-                );
-                assert!(bean_ch.content.contains("Body of Task one"));
-            }
+        if let BookItem::Chapter(type_ch) = &sub_items[0]
+            && let BookItem::Chapter(bean_ch) = &type_ch.sub_items[0]
+        {
+            assert_eq!(
+                bean_ch.path.as_ref().unwrap().to_string_lossy(),
+                "beans/b-1.md"
+            );
+            assert!(bean_ch.content.contains("Body of Task one"));
         }
     }
 
