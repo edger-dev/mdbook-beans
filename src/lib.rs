@@ -26,7 +26,9 @@ impl Preprocessor for BeansPreprocessor {
                 if chapter.content.contains("{{#beans-kanban}}") {
                     chapter.content = kanban::render(&beans);
                 } else if chapter.content.contains("{{#beans-tasks}}") {
-                    chapter.content = tasks::render(&beans);
+                    let (content, sub_items) = tasks::render(&beans);
+                    chapter.content = content;
+                    chapter.sub_items = sub_items;
                 }
             }
         });
