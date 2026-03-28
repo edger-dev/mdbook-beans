@@ -1,6 +1,6 @@
 /* Hide individual bean pages from the sidebar.
    Bean pages live under beans/p/ while type sections use beans/type-*.
-   The :has() selector hides <li> entries whose link points to a bean page. */
-li.chapter-item:has(> a[href*="/p/"]) {
+   Targets the chapter-link-wrapper > a pattern used by mdBook 0.5+. */
+li.chapter-item:has(> .chapter-link-wrapper > a[href*="/p/"]) {
     display: none;
 }
