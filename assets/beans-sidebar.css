@@ -9,3 +9,20 @@ li.chapter-item > ol.section > li.chapter-item > ol.section strong[aria-hidden] 
 .bean-meta table {
     width: 100%;
 }
+
+/* Kanban card styling */
+.bean-card {
+    border: 1px solid var(--table-border-color);
+    border-radius: 4px;
+    padding: 0.5em 1em;
+    margin-bottom: 0.75em;
+    background: var(--quote-bg);
+}
+.bean-card h3 {
+    margin-top: 0.25em;
+    margin-bottom: 0;
+}
+.bean-card ul {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+}

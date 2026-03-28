@@ -23,13 +23,21 @@ pub fn type_label(bean_type: &BeanType) -> &'static str {
     }
 }
 
-/// Render a compact card for use in Kanban view.
-pub fn render_bean_card(bean: &Bean, children: &[&Bean]) -> String {
-    let mut card = format!("### {}", bean.frontmatter.title);
+/// Render a kanban card for a bean.
+/// Two-line format: linked title + metadata badges.
+/// For epics, subtasks are listed underneath grouped by status.
+pub fn render_kanban_card(bean: &Bean, children: &[&Bean], path_prefix: &str) -> String {
+    let mut card = String::from("<div class=\"bean-card\">\n\n");
 
-    // Type and priority badges
+    // Linked title
     card.push_str(&format!(
-        "\n\n`{}` · `{}`",
+        "### [{} ({})]({}{}.md)\n\n",
+        bean.frontmatter.title, bean.id, path_prefix, bean.id
+    ));
+
+    // Badges line
+    card.push_str(&format!(
+        "`{}` · `{}`",
         type_label(&bean.frontmatter.bean_type),
         bean.frontmatter.priority
     ));
@@ -46,14 +54,25 @@ pub fn render_bean_card(bean: &Bean, children: &[&Bean]) -> String {
         card.push_str(&format!(" · ({}/{} done)", done_count, children.len()));
     }
 
-    // Subtask epic indicator
-    if let Some(parent_id) = &bean.frontmatter.parent {
-        card.push_str(&format!(" · ↑ {parent_id}"));
+    card.push('\n');
+
+    // Epic subtasks grouped by status
+    if bean.frontmatter.bean_type == BeanType::Epic && !children.is_empty() {
+        card.push('\n');
+        for child in children {
+            let status_icon = match child.frontmatter.status {
+                BeanStatus::Done | BeanStatus::Completed => "✓",
+                BeanStatus::InProgress => "▶",
+                _ => "○",
+            };
+            card.push_str(&format!(
+                "- {status_icon} [{} ({})]({}{}.md)\n",
+                child.frontmatter.title, child.id, path_prefix, child.id
+            ));
+        }
     }
 
-    // Link to bean's own page
-    card.push_str(&format!("\n\n[View →](beans/{}.md)\n", bean.id));
-
+    card.push_str("\n</div>\n");
     card
 }
 

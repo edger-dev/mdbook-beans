@@ -14,9 +14,17 @@ use mdbook_preprocessor::{Preprocessor, PreprocessorContext};
 fn replace_markers(items: &mut Vec<BookItem>, beans: &[bean::Bean]) {
     for item in items.iter_mut() {
         if let BookItem::Chapter(chapter) = item {
-            if chapter.content.contains("{{#beans-kanban}}") {
-                chapter.content = kanban::render(beans);
-            } else if chapter.content.contains("{{#beans-tasks}}") {
+            if chapter.content.contains("{{#beans-active-tasks}}") {
+                chapter.name = "Active Tasks".to_string();
+                let parent_number = chapter
+                    .number
+                    .as_ref()
+                    .map(|n| n.as_slice().to_vec())
+                    .unwrap_or_default();
+                let (content, sub_items) = kanban::render(beans, &parent_number);
+                chapter.content = content;
+                chapter.sub_items = sub_items;
+            } else if chapter.content.contains("{{#beans-all-tasks}}") {
                 let parent_number = chapter
                     .number
                     .as_ref()
