@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- Active Tasks card links resolved to `beans/beans/<id>.html` instead of `beans/<id>.html`
+
 ## [0.2.0] - 2026-03-28
 
 ### Added
