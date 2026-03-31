@@ -13,6 +13,14 @@ const TYPE_SECTIONS: &[(BeanType, &str)] = &[
     (BeanType::Chore, "Chores"),
 ];
 
+fn status_with_archived(bean: &Bean) -> String {
+    if bean.archived {
+        format!("{} · `archived`", render::status_label(&bean.frontmatter.status))
+    } else {
+        render::status_label(&bean.frontmatter.status).to_string()
+    }
+}
+
 fn bean_link(bean: &Bean) -> String {
     format!(
         "[{} ({})]({}.md)",
@@ -58,7 +66,7 @@ fn make_type_section(
         content.push_str(&format!(
             "- {} — *{}*\n",
             bean_link(bean),
-            render::status_label(&bean.frontmatter.status)
+            status_with_archived(bean)
         ));
     }
 
@@ -114,7 +122,7 @@ pub fn render(beans: &[Bean], parent_number: &[u32]) -> (String, Vec<BookItem>) 
             content.push_str(&format!(
                 "- {} — *{}*",
                 bean_link(bean),
-                render::status_label(&bean.frontmatter.status)
+                status_with_archived(bean)
             ));
             content.push('\n');
 
@@ -124,7 +132,7 @@ pub fn render(beans: &[Bean], parent_number: &[u32]) -> (String, Vec<BookItem>) 
                     content.push_str(&format!(
                         "  - {} — *{}*\n",
                         bean_link(child),
-                        render::status_label(&child.frontmatter.status)
+                        status_with_archived(child)
                     ));
                 }
             }
@@ -151,7 +159,7 @@ pub fn render(beans: &[Bean], parent_number: &[u32]) -> (String, Vec<BookItem>) 
     if !drafts.is_empty() {
         content.push_str("## Drafts\n\n");
         for bean in &drafts {
-            content.push_str(&format!("- {} — *Draft*\n", bean_link(bean)));
+            content.push_str(&format!("- {} — *{}*\n", bean_link(bean), status_with_archived(bean)));
         }
         content.push('\n');
 
@@ -191,6 +199,7 @@ mod tests {
                 blocked_by: vec![],
             },
             body: format!("Body of {title}"),
+            archived: false,
         }
     }
 
@@ -274,5 +283,23 @@ mod tests {
         if let BookItem::Chapter(ch) = last {
             assert_eq!(ch.name, "Drafts");
         }
+    }
+
+    #[test]
+    fn tasks_archived_beans_show_badge() {
+        let beans = vec![
+            make_bean("b-1", "Active task", BeanStatus::Todo, BeanType::Task, None),
+            {
+                let mut b = make_bean("b-2", "Old task", BeanStatus::Done, BeanType::Task, None);
+                b.archived = true;
+                b
+            },
+        ];
+        let (content, _) = render(&beans, &[8]);
+        // Archived bean shows its original status with archived badge
+        assert!(content.contains("`archived`"));
+        // Active bean does not have archived badge
+        let active_line = content.lines().find(|l| l.contains("Active task")).unwrap();
+        assert!(!active_line.contains("archived"));
     }
 }

@@ -9,12 +9,9 @@ fn is_done(bean: &Bean) -> bool {
         || bean.frontmatter.status == BeanStatus::Completed
 }
 
-/// Check if a bean is active (not Draft/Archived).
+/// Check if a bean is active (not Draft, not archived).
 fn is_active(bean: &Bean) -> bool {
-    !matches!(
-        bean.frontmatter.status,
-        BeanStatus::Draft | BeanStatus::Archived
-    )
+    !bean.archived && bean.frontmatter.status != BeanStatus::Draft
 }
 
 /// Collect children for a given bean.
@@ -126,6 +123,7 @@ mod tests {
                 blocked_by: vec![],
             },
             body: String::new(),
+            archived: false,
         }
     }
 
@@ -134,7 +132,11 @@ mod tests {
         let beans = vec![
             make_bean("b-1", "Active", BeanStatus::Todo, BeanType::Task),
             make_bean("b-2", "Draft", BeanStatus::Draft, BeanType::Task),
-            make_bean("b-3", "Archived", BeanStatus::Archived, BeanType::Task),
+            {
+                let mut b = make_bean("b-3", "Archived", BeanStatus::Done, BeanType::Task);
+                b.archived = true;
+                b
+            },
         ];
         let (content, _) = render(&beans, &[7]);
         assert!(content.contains("Active"));
