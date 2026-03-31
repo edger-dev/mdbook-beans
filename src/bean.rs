@@ -52,6 +52,8 @@ pub struct Bean {
     pub id: String,
     pub frontmatter: BeanFrontmatter,
     pub body: String,
+    /// Whether this bean was loaded from the archive/ subdirectory.
+    pub archived: bool,
 }
 
 /// Extract bean ID from filename.
@@ -95,12 +97,13 @@ fn parse_bean(content: &str, filename: &str) -> Result<Bean> {
         id,
         frontmatter,
         body,
+        archived: false,
     })
 }
 
 /// Scan a directory for bean markdown files, skipping directories and dotfiles.
-/// If `force_status` is set, override each bean's status after parsing.
-fn scan_beans_dir(dir: &Path, beans: &mut Vec<Bean>, force_status: Option<BeanStatus>) -> Result<()> {
+/// If `archived` is true, mark each bean as archived.
+fn scan_beans_dir(dir: &Path, beans: &mut Vec<Bean>, archived: bool) -> Result<()> {
     if !dir.exists() {
         return Ok(());
     }
@@ -125,9 +128,7 @@ fn scan_beans_dir(dir: &Path, beans: &mut Vec<Bean>, force_status: Option<BeanSt
         let content = std::fs::read_to_string(entry.path())?;
         match parse_bean(&content, &filename_str) {
             Ok(mut bean) => {
-                if let Some(ref status) = force_status {
-                    bean.frontmatter.status = status.clone();
-                }
+                bean.archived = archived;
                 beans.push(bean);
             }
             Err(e) => eprintln!("warning: skipping {filename_str}: {e}"),
@@ -142,8 +143,8 @@ pub fn load_beans(root: &Path, config: &BeansConfig) -> Result<Vec<Bean>> {
     let beans_dir = root.join(&config.beans.path);
 
     let mut beans = Vec::new();
-    scan_beans_dir(&beans_dir, &mut beans, None)?;
-    scan_beans_dir(&beans_dir.join("archive"), &mut beans, Some(BeanStatus::Archived))?;
+    scan_beans_dir(&beans_dir, &mut beans, false)?;
+    scan_beans_dir(&beans_dir.join("archive"), &mut beans, true)?;
 
     // Sort by ID for stable output
     beans.sort_by(|a, b| a.id.cmp(&b.id));
@@ -250,9 +251,14 @@ Subtask body.
         assert!(ids.contains(&"test-a1b2"));
         assert!(ids.contains(&"test-z9y8"));
 
-        // Beans from archive/ should have status forced to Archived
-        let archived = beans.iter().find(|b| b.id == "test-z9y8").unwrap();
-        assert_eq!(archived.frontmatter.status, BeanStatus::Archived);
+        // Beans from archive/ should be marked archived but keep original status
+        let archived_bean = beans.iter().find(|b| b.id == "test-z9y8").unwrap();
+        assert!(archived_bean.archived);
+        assert_eq!(archived_bean.frontmatter.status, BeanStatus::Done);
+
+        // Beans from main dir should not be marked archived
+        let active_bean = beans.iter().find(|b| b.id == "test-a1b2").unwrap();
+        assert!(!active_bean.archived);
     }
 
     #[test]

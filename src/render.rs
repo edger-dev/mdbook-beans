@@ -97,10 +97,12 @@ pub fn render_bean_section(bean: &Bean, all_beans: &[Bean]) -> String {
     // Metadata table (full width via HTML style)
     page.push_str("<div class=\"bean-meta\">\n\n");
     page.push_str("| | |\n|---|---|\n");
-    page.push_str(&format!(
-        "| **Status** | {} |\n",
-        status_label(&bean.frontmatter.status)
-    ));
+    let status_display = if bean.archived {
+        format!("{} · `archived`", status_label(&bean.frontmatter.status))
+    } else {
+        status_label(&bean.frontmatter.status).to_string()
+    };
+    page.push_str(&format!("| **Status** | {status_display} |\n"));
     page.push_str(&format!(
         "| **Type** | {} |\n",
         type_label(&bean.frontmatter.bean_type)
